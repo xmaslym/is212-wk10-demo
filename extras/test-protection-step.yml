@@ -1,0 +1,15 @@
+# Example CI step from the Week 10 slides ("The Same Requirement as Guidance and Enforcement").
+# Add these steps to the `test` job in .github/workflows/ci.yml, replacing the existing checkout step.
+# The step fails a pull request if any existing file under tests/ is modified, deleted or renamed.
+
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0      # need main to compare
+      - name: Existing tests must not change
+        if: github.event_name == 'pull_request'
+        run: |
+          changed=$(git diff --name-only --diff-filter=MDR \
+            origin/${{ github.base_ref }}...HEAD -- tests/)
+          if [ -n "$changed" ]; then
+            echo "::error::Changed: $changed"; exit 1
+          fi

@@ -1,0 +1,216 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Study-Room Booking</title>
+<style>
+  :root {
+    --ink: #1f2328; --muted: #656d76; --line: #d0d7de; --bg: #f6f8fa;
+    --accent: #ffc000; --blue: #2d75b5; --ok: #1a7f37; --bad: #cf222e;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Arial, sans-serif; color: var(--ink); background: #fff; }
+  header { background: var(--accent); padding: 14px 24px; display: flex; align-items: baseline; gap: 16px; flex-wrap: wrap; }
+  header h1 { margin: 0; font-size: 22px; }
+  header span { color: #3d3d3d; }
+  main { max-width: 1100px; margin: 0 auto; padding: 20px 24px 40px; }
+  h2 { font-size: 16px; margin: 0 0 10px; }
+  .card { border: 1px solid var(--line); border-radius: 8px; padding: 16px; background: #fff; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; }
+  .row > .card { flex: 1 1 300px; }
+  label { display: block; font-size: 13px; color: var(--muted); margin: 8px 0 3px; }
+  input, select, button { font: inherit; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; }
+  input, select { width: 100%; }
+  .pair { display: flex; gap: 10px; } .pair > div { flex: 1; }
+  button { margin-top: 12px; background: var(--ink); color: #fff; border-color: var(--ink); cursor: pointer; }
+  button.secondary { background: #fff; color: var(--ink); }
+  .hint { font-size: 13px; color: var(--muted); margin: 6px 0 0; }
+
+  /* day view */
+  .dayhead { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 10px; flex-wrap: wrap; }
+  .dayhead input { width: auto; }
+  .grid { position: relative; margin-left: 90px; margin-right: 20px; }
+  .scale { position: relative; height: 20px; font-size: 12px; color: var(--muted); }
+  .scale span { position: absolute; transform: translateX(-50%); }
+  .room { position: relative; height: 44px; border-top: 1px solid var(--line); }
+  .room:last-child { border-bottom: 1px solid var(--line); }
+  .room .name { position: absolute; left: -90px; top: 12px; width: 84px; font-weight: 600; font-size: 13px; }
+  .tick { position: absolute; top: 0; bottom: 0; border-left: 1px dashed #e4e7eb; }
+  .booking { position: absolute; top: 4px; height: 36px; border-radius: 5px; background: #dbe9f7; border: 1px solid var(--blue);
+             font-size: 11px; line-height: 1.3; padding: 2px 5px; overflow: hidden; white-space: nowrap; cursor: pointer; }
+  .booking.selected { background: #fff2cc; border-color: #bf9000; box-shadow: 0 0 0 2px #ffe08a; }
+
+  /* request log */
+  .log { font: 13px/1.5 ui-monospace, Consolas, monospace; background: var(--bg); border: 1px solid var(--line); border-radius: 6px;
+         padding: 10px 12px; white-space: pre-wrap; word-break: break-word; min-height: 64px; }
+  .status-ok { color: var(--ok); font-weight: 700; } .status-bad { color: var(--bad); font-weight: 700; }
+  ol.rules { margin: 0; padding-left: 20px; } ol.rules li { margin: 2px 0; }
+  code { font-family: ui-monospace, Consolas, monospace; font-size: 0.92em; background: var(--bg); padding: 1px 4px; border-radius: 4px; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Study-Room Booking</h1>
+  <span>IS212 · Week 10 running example</span>
+</header>
+
+<main>
+  <section class="card" style="margin-bottom:16px">
+    <div class="dayhead">
+      <h2 style="margin:0">Bookings</h2>
+      <div><label for="day" style="display:inline;margin-right:6px">Day</label><input type="date" id="day" value="2026-10-20"></div>
+    </div>
+    <div class="grid" id="grid"></div>
+    <p class="hint">Click a booking to select it for extending.</p>
+  </section>
+
+  <div class="row">
+    <section class="card">
+      <h2>Book a room</h2>
+      <label for="room">Room</label>
+      <select id="room"></select>
+      <label for="student">Student ID</label>
+      <input id="student" value="s1">
+      <div class="pair">
+        <div><label for="start">Start</label><input type="time" id="start" value="11:00" step="900"></div>
+        <div><label for="end">End</label><input type="time" id="end" value="12:00" step="900"></div>
+      </div>
+      <button id="book">Book</button>
+    </section>
+
+    <section class="card">
+      <h2>Extend a booking</h2>
+      <label for="booking">Booking</label>
+      <select id="booking"></select>
+      <label for="newEnd">New end time</label>
+      <input type="time" id="newEnd" value="12:00" step="900">
+      <button id="extend">Extend</button>
+      <p class="hint">Added by PR #57 – only works on the <code>agent/extend-booking</code> branch.</p>
+    </section>
+
+    <section class="card">
+      <h2>Booking rules</h2>
+      <ol class="rules">
+        <li>A booking lasts at most 2 hours</li>
+        <li>Rooms can be booked up to 7 days ahead <span class="hint">(not implemented)</span></li>
+        <li>Back-to-back bookings are fine; overlapping ones are not</li>
+        <li>Cancelling &lt; 2 h before the start records a strike <span class="hint">(not implemented)</span></li>
+      </ol>
+    </section>
+  </div>
+
+  <section class="card" style="margin-top:16px">
+    <h2>Last request</h2>
+    <div class="log" id="log">No requests yet.</div>
+  </section>
+</main>
+
+<script>
+const ROOMS = ["GSR-2-01", "GSR-2-02", "GSR-3-01"];
+const DAY_START = 8, DAY_END = 20;            // hours shown in the day view
+let bookings = [];
+let selectedId = null;
+
+const $ = (id) => document.getElementById(id);
+const hhmm = (iso) => iso.slice(11, 16);
+const pct = (iso) => {
+  const [h, m] = hhmm(iso).split(":").map(Number);
+  return ((h + m / 60 - DAY_START) / (DAY_END - DAY_START)) * 100;
+};
+
+async function api(method, path, body) {
+  const opts = { method, headers: { "Content-Type": "application/json" } };
+  if (body !== undefined) opts.body = JSON.stringify(body);
+  const res = await fetch(path, opts);
+  const text = await res.text();
+  let data = text;
+  try { data = JSON.parse(text); } catch (e) { /* not JSON */ }
+  return { status: res.status, ok: res.ok, data };
+}
+
+function showLog(method, path, body, res) {
+  const cls = res.ok ? "status-ok" : "status-bad";
+  let out = `${method} ${path}`;
+  if (body !== undefined) out += `\n${JSON.stringify(body)}`;
+  out += `\n\n<span class="${cls}">${res.status}</span>  `;
+  if (typeof res.data !== "string") out += escapeHtml(JSON.stringify(res.data));
+  else if (res.status === 404 || res.status === 405) out += res.status === 404 ? "Not Found" : "Method Not Allowed";
+  else out += escapeHtml(res.data.slice(0, 300));
+  if (res.status === 404 || res.status === 405) {
+    out += "\n\nThis endpoint doesn't exist on the current branch. Try:  git checkout agent/extend-booking";
+  }
+  $("log").innerHTML = out;
+}
+
+function escapeHtml(s) {
+  return s.replace(/[&<>]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;" }[c]));
+}
+
+async function refresh() {
+  const res = await api("GET", "/bookings");
+  bookings = res.ok ? res.data : [];
+  render();
+}
+
+function render() {
+  const day = $("day").value;
+  const rooms = [...new Set([...ROOMS, ...bookings.map((b) => b.room)])].sort();
+  const todays = bookings.filter((b) => b.start.startsWith(day));
+
+  let html = '<div class="scale">';
+  for (let h = DAY_START; h <= DAY_END; h += 1) {
+    html += `<span style="left:${((h - DAY_START) / (DAY_END - DAY_START)) * 100}%">${String(h).padStart(2, "0")}:00</span>`;
+  }
+  html += "</div>";
+  for (const room of rooms) {
+    html += `<div class="room"><div class="name">${room}</div>`;
+    for (let h = DAY_START; h <= DAY_END; h += 1) {
+      html += `<div class="tick" style="left:${((h - DAY_START) / (DAY_END - DAY_START)) * 100}%"></div>`;
+    }
+    for (const b of todays.filter((x) => x.room === room)) {
+      const left = pct(b.start), width = pct(b.end) - left;
+      html += `<div class="booking${b.id === selectedId ? " selected" : ""}" data-id="${b.id}"
+                 style="left:${left}%;width:${width}%" title="#${b.id} · ${b.student} · ${hhmm(b.start)}–${hhmm(b.end)}">
+                 <b>#${b.id}</b> · ${b.student}<br>${hhmm(b.start)}–${hhmm(b.end)}</div>`;
+    }
+    html += "</div>";
+  }
+  $("grid").innerHTML = html;
+  document.querySelectorAll(".booking").forEach((el) =>
+    el.addEventListener("click", () => { selectedId = Number(el.dataset.id); render(); }));
+
+  $("room").innerHTML = rooms.map((r) => `<option>${r}</option>`).join("");
+  $("booking").innerHTML = bookings.length
+    ? bookings.map((b) => `<option value="${b.id}" ${b.id === selectedId ? "selected" : ""}>#${b.id} · ${b.room} · ${b.student} · ${b.start.slice(0, 10)} ${hhmm(b.start)}–${hhmm(b.end)}</option>`).join("")
+    : "<option disabled>No bookings yet</option>";
+}
+
+$("booking").addEventListener("change", (e) => { selectedId = Number(e.target.value); render(); });
+$("day").addEventListener("change", render);
+
+$("book").addEventListener("click", async () => {
+  const day = $("day").value;
+  const body = { room: $("room").value, student: $("student").value.trim(),
+                 start: `${day}T${$("start").value}`, end: `${day}T${$("end").value}` };
+  const res = await api("POST", "/bookings", body);
+  showLog("POST", "/bookings", body, res);
+  if (res.ok) { selectedId = res.data.id; }
+  await refresh();
+});
+
+$("extend").addEventListener("click", async () => {
+  const id = Number($("booking").value);
+  const b = bookings.find((x) => x.id === id);
+  if (!b) return;
+  const body = { end: `${b.start.slice(0, 10)}T${$("newEnd").value}` };
+  const path = `/bookings/${id}`;
+  const res = await api("PATCH", path, body);
+  showLog("PATCH", path, body, res);
+  await refresh();
+});
+
+refresh();
+</script>
+</body>
+</html>
