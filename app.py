@@ -17,7 +17,7 @@ def create_app(config=None):
 
     @app.errorhandler(BookingError)
     def handle_booking_error(err):
-        return jsonify({"error": str(err)}), err.status
+        return jsonify({"error": str(err), "code": err.code}), err.status
 
     @app.get("/")
     def index():

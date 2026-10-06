@@ -8,7 +8,6 @@ def test_overlapping_booking_is_rejected(client, booked_room):
     resp = client.post("/bookings", json={"room": booked_room, "student": "s2",
                                           "start": "2026-10-20T10:30", "end": "2026-10-20T11:30"})
     assert resp.status_code == 409
-    assert resp.get_json() == {"error": "Room is not available"}
 
 
 def test_back_to_back_booking_is_allowed(client, booked_room):

@@ -7,9 +7,10 @@ MAX_DURATION = timedelta(hours=2)
 
 
 class BookingError(Exception):
-    def __init__(self, message, status=400):
+    def __init__(self, message, status=400, code="BOOKING_ERROR"):
         super().__init__(message)
         self.status = status
+        self.code = code
 
 
 def create_booking(room_id, student_id, start, end):
@@ -22,7 +23,8 @@ def create_booking(room_id, student_id, start, end):
         Booking.end > start,
     ).first()
     if clash:
-        raise BookingError("Room is not available", status=409)
+        raise BookingError("Room is not available", status=409,
+                           code="ROOM_UNAVAILABLE")
     booking = Booking(room_id=room_id, student_id=student_id, start=start, end=end)
     db.session.add(booking)
     db.session.commit()
@@ -33,7 +35,7 @@ def extend_booking(booking_id, new_end):
     booking = db.get_or_404(Booking, booking_id)
     end = _to_datetime(new_end)
     if end - booking.start > MAX_DURATION:
-        raise BookingError("Bookings are limited to 2 hours")
+        raise BookingError("Bookings are limited to 2 hours", code="TOO_LONG")
     clash = Booking.query.filter(
         Booking.room_id == booking.room_id,
         Booking.id != booking.id,
@@ -41,7 +43,8 @@ def extend_booking(booking_id, new_end):
         Booking.end > booking.start,
     ).first()
     if clash:
-        raise BookingError("Room is not available", status=409)
+        raise BookingError("Room is not available", status=409,
+                           code="ROOM_UNAVAILABLE")
     booking.end = end
     db.session.commit()
     return booking
