@@ -1,6 +1,6 @@
 from flask import Flask, jsonify, request
 
-from booking_service import BookingError, create_booking
+from booking_service import BookingError, create_booking, extend_booking
 from models import Booking, db
 from utils import parse_slot
 
@@ -33,6 +33,11 @@ def create_app(config=None):
         body = request.get_json()
         b = create_booking(body["room"], body["student"], body["start"], body["end"])
         return jsonify({"id": b.id}), 201
+
+    @app.patch("/bookings/<int:booking_id>")
+    def patch_booking(booking_id):
+        b = extend_booking(booking_id, request.get_json()["end"])
+        return jsonify({"id": b.id, "end": b.end.isoformat()}), 200
 
     return app
 
